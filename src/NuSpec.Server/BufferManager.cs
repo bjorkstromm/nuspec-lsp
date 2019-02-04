@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using Buffer = Microsoft.Language.Xml.Buffer;
@@ -6,23 +7,34 @@ namespace NuSpec.Server
 {
     class BufferManager
     {
-        private readonly ILanguageServer _router;
+        public EventHandler<DocumentUpdatedEventArgs> BufferUpdated;
 
-        public BufferManager(ILanguageServer router)
+        public BufferManager()
         {
-            _router = router;
         }
 
-        private ConcurrentDictionary<string, Buffer> _buffers = new ConcurrentDictionary<string, Buffer>();
+        private ConcurrentDictionary<Uri, Buffer> _buffers = new ConcurrentDictionary<Uri, Buffer>();
 
-        public void UpdateBuffer(string documentPath, Buffer buffer)
+        public void UpdateBuffer(Uri uri, Buffer buffer)
         {
-            _buffers.AddOrUpdate(documentPath, buffer, (k, v) => buffer);
+            _buffers.AddOrUpdate(uri, buffer, (k, v) => buffer);
+
+            BufferUpdated?.Invoke(this, new DocumentUpdatedEventArgs(uri));
         }
 
-        public Buffer GetBuffer(string documentPath)
+        public Buffer GetBuffer(Uri uri)
         {
-            return _buffers.TryGetValue(documentPath, out var buffer) ? buffer : null;
+            return _buffers.TryGetValue(uri, out var buffer) ? buffer : null;
+        }
+    }
+
+    public class DocumentUpdatedEventArgs : EventArgs
+    {
+        public Uri Uri { get; }
+
+        public DocumentUpdatedEventArgs(Uri uri)
+        {
+            Uri = uri;
         }
     }
 }

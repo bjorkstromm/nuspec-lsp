@@ -22,8 +22,6 @@ namespace NuSpec.Server
         private readonly ILanguageServer _router;
         private readonly BufferManager _bufferManager;
 
-        private readonly XmlSchemaSet _schemaSet;
-
         private readonly DocumentSelector _documentSelector = new DocumentSelector(
             new DocumentFilter()
             {
@@ -33,17 +31,11 @@ namespace NuSpec.Server
 
         private SynchronizationCapability _capability;
 
-        public TextDocumentSyncHandler(ILanguageServer router, BufferManager bufferManager)
+        public TextDocumentSyncHandler(ILanguageServer router, BufferManager bufferManager, DiagnosticsHandler diagnosticsHandler)
         {
             _router = router;
             _bufferManager = bufferManager;
-
-            _schemaSet = new XmlSchemaSet();
-            using (var xsd = typeof(TextDocumentSyncHandler).Assembly.GetManifestResourceStream("NuSpec.Server.nuspec.xsd"))
-            {
-                var schema = XmlSchema.Read(xsd, (sender, args) => {});
-                _schemaSet.Add(schema);
-            }
+            _bufferManager.BufferUpdated += (_, args) => diagnosticsHandler.PublishDiagnostics(args.Uri, _bufferManager.GetBuffer(args.Uri));
         }
 
         public TextDocumentSyncKind Change { get; } = TextDocumentSyncKind.Full;
@@ -64,20 +56,16 @@ namespace NuSpec.Server
 
         public Task<Unit> Handle(DidChangeTextDocumentParams request, CancellationToken cancellationToken)
         {
-            var documentPath = request.TextDocument.Uri.ToString();
+            var uri = request.TextDocument.Uri;
             var text = request.ContentChanges.FirstOrDefault()?.Text;
 
-            _bufferManager.UpdateBuffer(documentPath, new StringBuffer(text));
-
-            CheckDiagnostics(request.TextDocument.Uri, text);
+            _bufferManager.UpdateBuffer(uri, new StringBuffer(text));
             return Unit.Task;
         }
 
         public Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
         {
-            _bufferManager.UpdateBuffer(request.TextDocument.Uri.ToString(), new StringBuffer(request.TextDocument.Text));
-
-            CheckDiagnostics(request.TextDocument.Uri, request.TextDocument.Text);
+            _bufferManager.UpdateBuffer(request.TextDocument.Uri, new StringBuffer(request.TextDocument.Text));
             return Unit.Task;
         }
 
@@ -111,58 +99,6 @@ namespace NuSpec.Server
                 DocumentSelector = _documentSelector,
                 IncludeText = default
             };
-        }
-
-        private void CheckDiagnostics(Uri uri, string buffer)
-        {
-            var diagnostics = new List<Diagnostic>();
-
-            var settings = new XmlReaderSettings
-            {
-                ValidationType = ValidationType.Schema,
-                Schemas = _schemaSet,
-                ValidationFlags = XmlSchemaValidationFlags.ProcessInlineSchema |
-                                  XmlSchemaValidationFlags.ProcessSchemaLocation |
-                                  XmlSchemaValidationFlags.ReportValidationWarnings,
-                XmlResolver = new XmlUrlResolver(),
-            };
-            settings.ValidationEventHandler += (sender, args) =>
-            {
-                diagnostics.Add(new Diagnostic {
-                    Message = args.Message,
-                    Severity = DiagnosticSeverity.Error,
-                    Range = new Range(
-                        new Position(args.Exception.LineNumber - 1, args.Exception.LinePosition -1),
-                        new Position(args.Exception.LineNumber - 1, args.Exception.LinePosition -1)
-                    )
-                });
-            };
-
-            using (var sr = new StringReader(buffer))
-            using (var reader = XmlReader.Create(sr, settings))
-            {
-                try
-                {
-                    while(reader.Read());
-                }
-                catch (XmlException e)
-                {
-                    diagnostics.Add(new Diagnostic {
-                        Message = e.Message,
-                        Severity = DiagnosticSeverity.Error,
-                        Range = new Range(
-                            new Position(e.LineNumber - 1, e.LinePosition -1),
-                            new Position(e.LineNumber - 1, e.LinePosition -1)
-                        )
-                    });
-                }
-            }
-
-            _router.Document.PublishDiagnostics(new PublishDiagnosticsParams
-            {
-                Uri = uri,
-                Diagnostics = diagnostics
-            });
         }
     }
 }

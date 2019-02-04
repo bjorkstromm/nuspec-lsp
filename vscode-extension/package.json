@@ -10,7 +10,7 @@
         "Other"
     ],
     "activationEvents": [
-        "onLanguage:xml"
+        "workspaceContains:**/*.nuspec"
     ],
     "main": "./out/extension",
     "contributes": {},

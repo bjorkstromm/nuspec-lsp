@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xs:schema id="nuspec"
-    targetNamespace="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
+    targetNamespace="{0}"
     elementFormDefault="qualified"
-    xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
-    xmlns:mstns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd"
+    xmlns="{0}"
+    xmlns:mstns="{0}"
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
 >
     <xs:complexType name="dependency">
@@ -54,6 +54,17 @@
                             <xs:element name="owners" maxOccurs="1" minOccurs="0" type="xs:string" />
                             <xs:element name="licenseUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
                             <xs:element name="projectUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
+                            <xs:element name="projectSourceUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
+                            <xs:element name="packageSourceUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
+                            <xs:element name="docsUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
+                            <xs:element name="wikiUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
+                            <xs:element name="mailingListUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
+                            <xs:element name="bugTrackerUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
+                            <xs:element name="replaces" maxOccurs="1" minOccurs="0" type="xs:string" />
+                            <xs:element name="provides" maxOccurs="1" minOccurs="0" type="xs:string" />
+                            <xs:element name="conflicts" maxOccurs="1" minOccurs="0" type="xs:string" />
+                            <xs:element name="softwareDisplayName" maxOccurs="1" minOccurs="0" type="xs:string" />
+                            <xs:element name="softwareDisplayVersion" maxOccurs="1" minOccurs="0" type="xs:string" />
                             <xs:element name="iconUrl" maxOccurs="1" minOccurs="0" type="xs:anyURI" />
                             <xs:element name="requireLicenseAcceptance" maxOccurs="1" minOccurs="0" type="xs:boolean" />
                             <xs:element name="developmentDependency" maxOccurs="1" minOccurs="0" type="xs:boolean" />
@@ -63,37 +74,6 @@
                             <xs:element name="copyright" maxOccurs="1" minOccurs="0" type="xs:string" />
                             <xs:element name="language" maxOccurs="1" minOccurs="0" type="xs:string" default="en-US" />
                             <xs:element name="tags" maxOccurs="1" minOccurs="0" type="xs:string" />
-                            <xs:element name="serviceable" maxOccurs="1" minOccurs="0" type="xs:boolean" />
-                            <xs:element name="repository" maxOccurs="1" minOccurs="0">
-                              <xs:complexType>
-                                <xs:attribute name="type" type="xs:string" use="optional" />
-                                <xs:attribute name="url" type="xs:anyURI" use="optional" />
-                                <xs:attribute name="branch" type="xs:string" use="optional" />
-                                <xs:attribute name="commit" type="xs:string" use="optional" />
-                              </xs:complexType>
-                            </xs:element>
-                            <xs:element name="license" maxOccurs="1" minOccurs="0">
-                              <xs:complexType>
-                                <xs:simpleContent>
-                                  <xs:extension base="xs:string">
-                                    <xs:attribute name="type" type="xs:string" use="required"/>
-                                    <xs:attribute name="version" type="xs:string" use="optional"/>
-                                  </xs:extension>
-                                </xs:simpleContent>
-                              </xs:complexType>
-                            </xs:element>
-                            <xs:element name="packageTypes" maxOccurs="1" minOccurs="0">
-                                <xs:complexType>
-                                    <xs:sequence>
-                                        <xs:element name="packageType" maxOccurs="unbounded" minOccurs="0">
-                                            <xs:complexType>
-                                                <xs:attribute name="name" type="xs:string" use="required" />
-                                                <xs:attribute name="version" type="xs:string" use="optional" />
-                                            </xs:complexType>
-                                        </xs:element>
-                                    </xs:sequence>
-                                </xs:complexType>
-                            </xs:element>
                             <xs:element name="dependencies" maxOccurs="1" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>

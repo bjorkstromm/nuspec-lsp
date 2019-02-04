@@ -10,16 +10,16 @@ namespace NuSpec.Server
     {
         static async Task Main(string[] args)
         {
-            var server = await LanguageServer.From(options =>
-                options
-                    .WithInput(Console.OpenStandardInput())
-                    .WithOutput(Console.OpenStandardOutput())
-                    .WithLoggerFactory(new LoggerFactory())
-                    .AddDefaultLoggingProvider()
-                    .WithMinimumLogLevel(LogLevel.Trace)
-                    .WithServices(ConfigureServices)
-                    .WithHandler<TextDocumentSyncHandler>()
-                );
+            var options = new LanguageServerOptions()
+                .WithInput(Console.OpenStandardInput())
+                .WithOutput(Console.OpenStandardOutput())
+                .WithLoggerFactory(new LoggerFactory())
+                .AddDefaultLoggingProvider()
+                .WithMinimumLogLevel(LogLevel.Trace)
+                .WithServices(ConfigureServices)
+                .WithHandler<TextDocumentSyncHandler>();
+
+            var server = await LanguageServer.From(options);
 
             await server.WaitForExit;
         }
@@ -27,6 +27,7 @@ namespace NuSpec.Server
         static void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<BufferManager>();
+            services.AddSingleton<DiagnosticsHandler>();
         }
     }
 }
