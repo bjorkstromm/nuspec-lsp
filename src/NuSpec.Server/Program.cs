@@ -17,7 +17,17 @@ namespace NuSpec.Server
                 .AddDefaultLoggingProvider()
                 .WithMinimumLogLevel(LogLevel.Trace)
                 .WithServices(ConfigureServices)
-                .WithHandler<TextDocumentSyncHandler>();
+                .WithHandler<TextDocumentSyncHandler>()
+                .OnInitialize((s, _) => {
+                    var serviceProvider = (s as LanguageServer).Services;
+                    var bufferManager = serviceProvider.GetService<BufferManager>();
+                    var diagnosticsHandler = serviceProvider.GetService<DiagnosticsHandler>();
+
+                    // Hook up diagnostics
+                    bufferManager.BufferUpdated += (__, x) => diagnosticsHandler.PublishDiagnostics(x.Uri, bufferManager.GetBuffer(x.Uri));
+
+                    return Task.CompletedTask;
+                });
 
             var server = await LanguageServer.From(options);
 

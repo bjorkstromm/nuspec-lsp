@@ -31,11 +31,10 @@ namespace NuSpec.Server
 
         private SynchronizationCapability _capability;
 
-        public TextDocumentSyncHandler(ILanguageServer router, BufferManager bufferManager, DiagnosticsHandler diagnosticsHandler)
+        public TextDocumentSyncHandler(ILanguageServer router, BufferManager bufferManager)
         {
             _router = router;
             _bufferManager = bufferManager;
-            _bufferManager.BufferUpdated += (_, args) => diagnosticsHandler.PublishDiagnostics(args.Uri, _bufferManager.GetBuffer(args.Uri));
         }
 
         public TextDocumentSyncKind Change { get; } = TextDocumentSyncKind.Full;

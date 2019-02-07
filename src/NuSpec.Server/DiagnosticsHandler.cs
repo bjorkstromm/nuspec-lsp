@@ -1,12 +1,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Xml;
 using System.Xml.Schema;
+using Microsoft.Language.Xml;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using Buffer = Microsoft.Language.Xml.Buffer;
+using DiagnosticSeverity = OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity;
 
 namespace NuSpec.Server
 {
@@ -15,6 +19,12 @@ namespace NuSpec.Server
         private readonly ILanguageServer _router;
         private readonly BufferManager _bufferManager;
         private readonly XmlSchemaSet _schemaSet;
+        private static readonly IReadOnlyCollection<string> TemplatedValues = new []
+        {
+            "__replace",
+            "space_separated",
+            "tag1"
+        };
 
         public DiagnosticsHandler(ILanguageServer router, BufferManager bufferManager)
         {
@@ -41,6 +51,42 @@ namespace NuSpec.Server
 
         public void PublishDiagnostics(Uri uri, Buffer buffer)
         {
+            var text = buffer.GetText(0, buffer.Length);
+            var syntaxTree = Parser.Parse(buffer);
+            var textPositions = new TextPositions(text);
+            var diagnostics = new List<Diagnostic>();
+
+            diagnostics.AddRange(ValidateAgainstSchema( text));
+            diagnostics.AddRange(ValidateTemplatedValues(syntaxTree, textPositions));
+
+            _router.Document.PublishDiagnostics(new PublishDiagnosticsParams
+            {
+                Uri = uri,
+                Diagnostics = diagnostics
+            });
+        }
+
+        private IEnumerable<Diagnostic> ValidateTemplatedValues(XmlDocumentSyntax syntaxTree, TextPositions textPositions)
+        {
+            foreach (var node in syntaxTree.DescendantNodesAndSelf().OfType<XmlTextSyntax>())
+            {
+                if (!TemplatedValues.Any(x => node.Value.Contains(x, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                var range = textPositions.GetRange(node.Start, node.End);
+
+                yield return new Diagnostic {
+                    Message = "Templated value which should be removed",
+                    Severity = DiagnosticSeverity.Error,
+                    Range = range
+                };
+            }
+        }
+
+        private IEnumerable<Diagnostic> ValidateAgainstSchema(string text)
+        {
             var diagnostics = new List<Diagnostic>();
 
             var settings = new XmlReaderSettings
@@ -64,7 +110,7 @@ namespace NuSpec.Server
                 });
             };
 
-            using (var sr = new StringReader(buffer.GetText(0, buffer.Length)))
+            using (var sr = new StringReader(text))
             using (var reader = XmlReader.Create(sr, settings))
             {
                 try
@@ -84,11 +130,7 @@ namespace NuSpec.Server
                 }
             }
 
-            _router.Document.PublishDiagnostics(new PublishDiagnosticsParams
-            {
-                Uri = uri,
-                Diagnostics = diagnostics
-            });
+            return diagnostics;
         }
     }
 }
